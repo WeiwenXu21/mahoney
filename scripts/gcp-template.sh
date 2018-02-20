@@ -60,6 +60,7 @@ gcloud beta dataproc clusters create "$CLUSTER" \
 	--master-machine-type "$TYPE" \
 	--worker-machine-type "$TYPE" \
 	--num-workers "$WORKERS" \
+	--initialization-action-timeout "20m" \
 	--initialization-actions "gs://$BUCKET/mahoney/scripts/gcp-bootstrap.sh" \
 	# --master-accelerator "type=$GPU_TYPE,count=$GPUS" \
 	# --worker-accelerator "type=$GPU_TYPE,count=$GPUS" \

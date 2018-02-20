@@ -44,9 +44,10 @@ apt-get -y upgrade
 echo "==> Installing conda packages"
 conda config --set always_yes true
 conda config --set changeps1 false
-conda install -q numpy scipy matplotlib scikit-learn
-conda install -q dask knit
-conda install -q -c pytorch pytorch torchvision
+conda install -q \
+  numpy scipy matplotlib scikit-learn pandas \
+  conda-forge::dask conda-forge::knit \
+  pytorch::pytorch
 
 
 # Install GPU drivers

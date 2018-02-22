@@ -45,7 +45,7 @@ echo "==> Installing conda packages"
 conda config --set always_yes true
 conda config --set changeps1 false
 conda install -q \
-  numpy scipy scikit-learn \
+  numpy scipy scikit-learn scikit-image \
   conda-forge::dask conda-forge::knit \
   pytorch::pytorch
 

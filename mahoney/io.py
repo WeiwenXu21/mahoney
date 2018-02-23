@@ -1,10 +1,47 @@
 import json
 from pathlib import Path
 
+import dask.array as da
+import dask.array.image
+
 import numpy as np
 
 import skimage as ski
 import skimage.measure
+
+
+TRAIN_SETS = [
+    '00.00', '00.01', '00.02', '00.03', '00.04', '00.05', '00.06', '00.07',
+    '00.08', '00.09', '00.10', '00.11', '01.00', '01.01', '02.00', '02.01',
+    '03.00', '04.00', '04.01'
+]
+
+
+TEST_SETS = [
+    '00.00.test', '00.01.test', '01.00.test', '01.01.test', '02.00.test',
+    '02.01.test', '03.00.test', '04.00.test', '04.01.test'
+]
+
+
+def load_instance(path, imread=None, preprocess=None):
+    '''Reads a collection of image files into a dask array.
+
+    Args:
+        path:
+            The path to the image directory. It should contain files matching
+            the glob 'image*.tiff' and all images should be the same shape.
+        imread:
+            Override the function to used read images. The default is
+            determined by dask, currently `skimage.io.imread`.
+        preprocess:
+            A function to apply to each image.
+
+    Returns:
+        A dask array with shape (N, H, W) where N is the number of images,
+        H is the height of the images, and W is the width of the images.
+    '''
+    im = da.image.imread(path + '/image*.tiff', imread, preprocess)
+    return im
 
 
 def load_rois(path):

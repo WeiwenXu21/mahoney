@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import dask.array as da
 import dask.array.image
@@ -54,8 +53,7 @@ def load_rois(path):
         A list of dicts, each mapping the key 'coordinates' to a list of pixel
         coordinates belonging to that region of interest.
     '''
-    path = Path(path)
-    with path.open() as fd:
+    with open(path) as fd:
         rois = json.load(fd)
     return rois
 

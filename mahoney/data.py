@@ -84,7 +84,7 @@ class Neurofinder(Dataset):
         for sub in subset:
             path = f'{base_path}/neurofinder.{sub}'
 
-            x = io.load_instance(path, imread, preprocess)
+            x = io.load_video(path, imread, preprocess)
 
             meta = io.load_metadata(path)
             meta['dataset'] = sub

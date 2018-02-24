@@ -42,7 +42,7 @@ def test_lossless():
 
 def test_from_file():
     # All of these loads should succeed without error.
-    im = io.load_instance('./data/neurofinder.01.00')
+    im = io.load_video('./data/neurofinder.01.00')
     mask = io.load_mask('./data/neurofinder.01.00')
     meta = io.load_metadata('./data/neurofinder.01.00')
 

@@ -24,8 +24,8 @@ def load_metadata(path):
     return meta
 
 
-def load_instance(path, imread=None, preprocess=None):
-    '''Reads a collection of image files into a dask array.
+def load_video(path, imread=None, preprocess=None):
+    '''Reads a Neurofinder video into a dask array.
 
     Args:
         path:

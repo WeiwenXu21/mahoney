@@ -95,12 +95,12 @@ def rois_to_mask(rois, shape=(512,512)):
         classes, H is the height of the image, and W is the width of the image.
         There are exactly two classes, background and foreground.
     '''
-    fg = np.zeros(shape, dtype='float64')
+    fg = np.zeros(shape, dtype='int64')
     for i, roi in enumerate(rois):
         coords = roi['coordinates']
         for y, x in coords:
             fg[y, x] = 1
-    bg = (fg == 0).astype('float64')
+    bg = (fg == 0).astype('int64')
     return np.stack([bg, fg])
 
 

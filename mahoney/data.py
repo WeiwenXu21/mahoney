@@ -112,3 +112,36 @@ class Neurofinder(Dataset):
         '''Retrieves the ith datum from the dataset.
         '''
         return self.data[i]
+
+
+class Torchify(Dataset):
+    '''Adapts a Neurofinder dataset to a more PyTorch-friendly format.
+
+    The new data are tripples of the form `(x, y, code)` where `x` is a numpy
+    array for the datum, `y` is the label mask or the string 'N/A', and `code`
+    is the Neurofinder code for the video from which the datum was taken.
+
+    This format works in conjunction with the PyTorch `DataLoader` class, a
+    high performance iterator which automatically casts numpy arrays to torch
+    Tensors and supports batching, prefetching, and CUDA pinned memory.
+    '''
+
+    def __init__(self, ds):
+        '''Creates a torchified version of a Neurofinder dataset.
+        '''
+        self.ds = ds
+
+    def __len__(self):
+        '''Returns the number of data in this dataset.
+        '''
+        return len(self.ds)
+
+    def __getitem__(self, i):
+        '''Retrieves the ith datum from the dataset.
+        '''
+        d = self.ds[i]
+        x = d['x'].compute()
+        y = d['y']
+        if y is None: y = 'N/A'
+        code = d['meta']['dataset']
+        return x, y, code

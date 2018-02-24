@@ -40,8 +40,11 @@ def load_instance(path, imread=None, preprocess=None):
         A dask array with shape (N, H, W) where N is the number of images,
         H is the height of the images, and W is the width of the images.
     '''
-    mask = da.image.imread(f'{path}/images/image*.tiff', imread, preprocess)
-    return mask
+    # The images are 16bit TIFF, which most applications don't expect.
+    # So we convert to float automatically.
+    x = da.image.imread(f'{path}/images/image*.tiff', imread, preprocess)
+    x = x / (2 ** 16)
+    return x
 
 
 def load_mask(path, shape=(512,512)):

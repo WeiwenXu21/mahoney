@@ -44,12 +44,14 @@ def load_instance(path, imread=None, preprocess=None):
     return mask
 
 
-def load_mask(path):
+def load_mask(path, shape=(512,512)):
     '''Reads a regions-of-interest file into a segmentation mask.
 
     Args:
         path:
             The base path to the dataset.
+        shape:
+            Shape of the mask.
 
     Returns:
         A one-hot segmentation mask of shape (C, H, W) where C is the number of
@@ -57,7 +59,7 @@ def load_mask(path):
         There are exactly two classes, background and foreground.
     '''
     rois = load_rois(path)
-    mask = rois_to_mask(rois)
+    mask = rois_to_mask(rois, shape=shape)
     return mask
 
 
@@ -88,7 +90,7 @@ def rois_to_mask(rois, shape=(512,512)):
             to that region of interest. This is the format given by the label
             JSON files.
         shape:
-            Shape of the image.
+            Shape of the mask.
 
     Returns:
         A one-hot segmentation mask of shape (C, H, W) where C is the number of

@@ -121,9 +121,9 @@ class Torchify(Dataset):
     array for the datum, `y` is the label mask or the string 'N/A', and `code`
     is the Neurofinder code for the video from which the datum was taken.
 
-    This format works in conjunction with the PyTorch `DataLoader` class, a
-    high performance iterator which automatically casts numpy arrays to torch
-    Tensors and supports batching, prefetching, and CUDA pinned memory.
+    This format works in conjunction with the PyTorch `DataLoader` class, an
+    iterator with performance and convenience features for PyTorch based
+    models.
     '''
 
     def __init__(self, ds):

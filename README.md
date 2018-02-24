@@ -17,3 +17,12 @@ Take some time to read through the script. The script is primarily configured by
 The script is designed to be launched from the root of this repository. To use a different working directory, update the relative paths accordingly.
 
 Calling the script will submit a Mahoney job to a newly created Dataproc cluster. The arguments passed to the script are forwarded to Mahoney on the cluster.
+
+
+## API: Interfacing with the data
+
+We provide two modules for interfacing with the data.
+
+The `mahoney.io` module contains low-level routines to load Neurofinder videos as dask arrays, to load region files as both structured objects and segmentation masks, and to load metadata files. This is the most convenient interface for interactive data exploration.
+
+The `mahoney.data` module exports a higher-level interface. The `mahoney.data.Neurofinder` class provides a cohesive view of the entire dataset, out of core. It breaks each video into multiple, consistently shaped datum by considering the subvideos of a given length, and returns the corresponding metadata and labels (if available) simultaneously with each datum. The `mahoney.data.Torchify` adapter wraps a `Neurofinder` dataset into a form compatible with PyTorch's `DataLoader`, an iterator with high-performance and convenience features like shuffling, batching, prefetching, and CUDA pinned memory.

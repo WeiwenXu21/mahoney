@@ -43,6 +43,22 @@ def load_instance(path, imread=None, preprocess=None):
     return mask
 
 
+def load_mask(path):
+    '''Reads a regions-of-interest file into a segmentation mask.
+
+    Args:
+        path: Path to the ROI file.
+
+    Returns:
+        A one-hot segmentation mask of shape (C, H, W) where C is the number of
+        classes, H is the height of the image, and W is the width of the image.
+        There are exactly two classes, background and foreground.
+    '''
+    rois = load_rois(path)
+    mask = rois_to_mask(rois)
+    return mask
+
+
 def load_rois(path):
     '''Reads a regions-of-interest file into a Python object.
 
@@ -71,9 +87,9 @@ def rois_to_mask(rois, shape=(512,512)):
             Shape of the image.
 
     Returns:
-        An array of shape (C, H, W) where C is the number of classes, H is the
-        height of the image, and W is the width of the image. There are exactly
-        two classes, background and foreground, in that order.
+        A one-hot segmentation mask of shape (C, H, W) where C is the number of
+        classes, H is the height of the image, and W is the width of the image.
+        There are exactly two classes, background and foreground.
     '''
     fg = np.zeros(shape, dtype='float64')
     for i, roi in enumerate(rois):

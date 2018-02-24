@@ -14,8 +14,7 @@ def load_instance(path, imread=None, preprocess=None):
 
     Args:
         path:
-            The path to the image directory. It should contain files matching
-            the glob 'image*.tiff' and all images should be the same shape.
+            The base path to the dataset.
         imread:
             Override the function to used read images. The default is
             determined by dask, currently `skimage.io.imread`.
@@ -26,7 +25,7 @@ def load_instance(path, imread=None, preprocess=None):
         A dask array with shape (N, H, W) where N is the number of images,
         H is the height of the images, and W is the width of the images.
     '''
-    mask = da.image.imread(path + '/image*.tiff', imread, preprocess)
+    mask = da.image.imread(f'{path}/images/image*.tiff', imread, preprocess)
     return mask
 
 
@@ -34,7 +33,8 @@ def load_mask(path):
     '''Reads a regions-of-interest file into a segmentation mask.
 
     Args:
-        path: Path to the ROI file.
+        path:
+            The base path to the dataset.
 
     Returns:
         A one-hot segmentation mask of shape (C, H, W) where C is the number of
@@ -50,12 +50,14 @@ def load_rois(path):
     '''Reads a regions-of-interest file into a Python object.
 
     Args:
-        path: Path to the ROI file.
+        path:
+            The base path to the dataset.
 
     Returns:
         A list of dicts, each mapping the key 'coordinates' to a list of pixel
         coordinates belonging to that region of interest.
     '''
+    path = f'{path}/regions/regions.json'
     with open(path) as fd:
         rois = json.load(fd)
     return rois

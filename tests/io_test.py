@@ -28,8 +28,8 @@ def test_lossless():
     lossless when the regions are contiguous and non-overlapping.
     '''
     true_rois = json.loads(contiguous_nonoverlap)
-    im = io.rois_to_im(true_rois)
-    processed_rois = io.im_to_rois(im)
+    mask = io.rois_to_mask(true_rois)
+    processed_rois = io.mask_to_rois(mask)
 
     # There are 4 ROIs in the example data
     assert len(true_rois) == 4

@@ -39,8 +39,8 @@ def load_instance(path, imread=None, preprocess=None):
         A dask array with shape (N, H, W) where N is the number of images,
         H is the height of the images, and W is the width of the images.
     '''
-    im = da.image.imread(path + '/image*.tiff', imread, preprocess)
-    return im
+    mask = da.image.imread(path + '/image*.tiff', imread, preprocess)
+    return mask
 
 
 def load_rois(path):
@@ -58,7 +58,7 @@ def load_rois(path):
     return rois
 
 
-def rois_to_im(rois, shape=(512,512)):
+def rois_to_mask(rois, shape=(512,512)):
     '''Converts a regions-of-interest list into a segmentation mask.
 
     Args:
@@ -84,7 +84,7 @@ def rois_to_im(rois, shape=(512,512)):
     return np.stack([bg, fg])
 
 
-def im_to_rois(im):
+def mask_to_rois(mask):
     '''Converts a segmentation mask into a regions-of-interest list.
 
     The segmentation mask must be an array of shape (C, H, W) where C is the
@@ -95,7 +95,7 @@ def im_to_rois(im):
     The regions of interest are the connected components in the foreground.
 
     Args:
-        im:
+        mask:
             The segmentation mask.
 
     Returns:
@@ -103,12 +103,12 @@ def im_to_rois(im):
         coordinates belonging to that region of interest.
     '''
     # Separate the regions of interest from each other.
-    im = im[1]  # Just use the foreground.
-    im = ski.measure.label(im, connectivity=1)
+    mask = mask[1]  # Just use the foreground.
+    mask = ski.measure.label(mask, connectivity=1)
 
     rois = []
-    for i in range(np.max(im)):
-        coords = np.argwhere(im == i+1)
+    for i in range(np.max(mask)):
+        coords = np.argwhere(mask == i+1)
         coords = coords.tolist()
         rois.append({'coordinates': coords})
 

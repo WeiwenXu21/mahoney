@@ -28,12 +28,12 @@ class Neurofinder(Dataset):
     video, there is a single ground truth segmentation of the neurons.
 
     This dataset generates multiple data from each video by taking blocks of
-    `n_frames` contiguous fames. The initial frame of each block is separated
-    by `step` frames from the initial frame of the previous block. Thus data
-    overlap if `step < n_frames`.
+    `n` contiguous fames. The first frame of each datum is separated by
+    `step` frames from the first frame of the previous datum. Thus data
+    overlap if `step < n`.
 
     Each datum is a dict with the following entries:
-    - 'x': A dask array giving the frames in a block.
+    - 'x': A dask array giving the frames in a datum.
     - 'y': The label mask or None if it is unknown.
     - 'meta': A dict of metadata read from `info.json` and more.
 
@@ -42,8 +42,8 @@ class Neurofinder(Dataset):
     - 'dataset': The Neurofinder code for the video, e.g. '01.00'.
     '''
 
-    def __init__(self, base_path, n_frames=1024, max_data=3000, step=1, subset='train',
-            imread=None, preprocess=None):
+    def __init__(self, base_path, n=1024, start=0, stop=3000, step=1,
+            subset='train', imread=None, preprocess=None):
         '''Construct a dataset given a path to the data.
 
         Args:
@@ -51,13 +51,15 @@ class Neurofinder(Dataset):
                 The path to the data. This must be a directory containing
                 subdirectories with names `neurofinder.DATASET` where `DATASET`
                 is a Neurofinder code, e.g. `01.00`.
-            n_frames:
+            n:
                 The number of frames in each datum.
-            max_data:
+            start:
+                The index of the first frame of the first datum for each video.
+            stop:
                 The maximum number of data taken from each video.
             step:
-                The number of frames between the initial frames of each datum
-                of the same video.
+                The number of frames between the first frame of consecutive
+                datum from the same video.
             subset:
                 The subset of data to consider. This is a collection of
                 Neurofinder codes or one of the strings 'train', 'test', or
@@ -93,10 +95,10 @@ class Neurofinder(Dataset):
             except FileNotFoundError:
                 y = None
 
-            stop = min(max_data, len(x) - n_frames + 1)
-            for i in range(0, stop, step):
+            stop = min(stop, len(x) - n + 1)
+            for i in range(start, stop, step):
                 self.data.append({
-                    'x': x[i:i+n_frames],
+                    'x': x[i:i+n],
                     'y': y,
                     'meta': meta
                 })

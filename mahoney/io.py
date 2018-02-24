@@ -58,12 +58,8 @@ def load_rois(path):
     return rois
 
 
-def rois_to_im(rois, shape=(512,512), reduce=True):
+def rois_to_im(rois, shape=(512,512)):
     '''Converts a regions-of-interest list into a segmentation mask.
-
-    When `reduce=False`, pixels are assigned to a single region of interest.
-    If multiple ROIs overlap, the pixel is assigned to the final ROI in which
-    it appears.
 
     Args:
         rois:
@@ -72,47 +68,48 @@ def rois_to_im(rois, shape=(512,512), reduce=True):
             to that region of interest. This is the format given by the label
             JSON files.
         shape:
-            Shape of the segmentation mask.
-        reduce:
-            If true, each region of interest is given the label 1.
-            If false, each region of interest is given a distinct label.
+            Shape of the image.
 
     Returns:
-        A segmentation mask.
+        An array of shape (C, H, W) where C is the number of classes, H is the
+        height of the image, and W is the width of the image. There are exactly
+        two classes, background and foreground, in that order.
     '''
-    im = np.zeros(shape, dtype='int64')
+    fg = np.zeros(shape, dtype='float64')
     for i, roi in enumerate(rois):
-        val = 1 if reduce else i+1
         coords = roi['coordinates']
         for y, x in coords:
-            im[y, x] = val
-    return im
+            fg[y, x] = 1
+    bg = (fg == 0).astype('float64')
+    return np.stack([bg, fg])
 
 
-def im_to_rois(im, reduce=True):
+def im_to_rois(im):
     '''Converts a segmentation mask into a regions-of-interest list.
+
+    The segmentation mask must be an array of shape (C, H, W) where C is the
+    number of classes, H is the height of the image, and W is the width of the
+    image. There must be exactly two classes, background and foreground, in
+    that order.
+
+    The regions of interest are the connected components in the foreground.
 
     Args:
         im:
-            The segmentation mask
-        reduce:
-            Set to true if the segmentation mask is reduced, meaning all
-            regions of interest have the same label (1). Set to false if each
-            region of interest has a unique label (consecutive integers
-            starting at 1).
+            The segmentation mask.
 
     Returns:
         A list of dicts, each mapping the key 'coordinates' to a list of pixel
         coordinates belonging to that region of interest.
     '''
+    # Separate the regions of interest from each other.
+    im = im[1]  # Just use the foreground.
+    im = ski.measure.label(im, connectivity=1)
+
     rois = []
-
-    # If the mask is reduced, try to separate regions of interest.
-    if reduce:
-        im = ski.measure.label(im, connectivity=1)
-
-    n = np.max(im)
-    for i in range(n):
+    for i in range(np.max(im)):
         coords = np.argwhere(im == i+1)
-        rois.append({'coordinates': coords.tolist()})
+        coords = coords.tolist()
+        rois.append({'coordinates': coords})
+
     return rois

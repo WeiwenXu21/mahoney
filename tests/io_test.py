@@ -1,6 +1,6 @@
 import json
 
-from mahoney import io
+import mahoney.io as io
 
 
 # This is a subset of the regions.json for dataset 01.00.
@@ -24,9 +24,6 @@ contiguous_nonoverlap = '''
 
 
 def test_lossless():
-    '''Converting between a segmentation mask and an ROI list should be
-    lossless when the regions are contiguous and non-overlapping.
-    '''
     true_rois = json.loads(contiguous_nonoverlap)
     mask = io.rois_to_mask(true_rois)
     processed_rois = io.mask_to_rois(mask)
@@ -41,3 +38,14 @@ def test_lossless():
             rois[i] = sorted(roi['coordinates'])
         rois.sort()
     assert processed_rois == true_rois
+
+
+def test_from_file():
+    # All of these loads should succeed without error.
+    im = io.load_instance('./data/neurofinder.01.00')
+    mask = io.load_mask('./data/neurofinder.01.00')
+    meta = io.load_metadata('./data/neurofinder.01.00')
+
+    assert im.shape == (2250, 512, 512)  # 2250 frames at 512x512 resolution
+    assert mask.shape == (2, 512, 512)  # 2 classes, background and foreground
+    assert meta['id'] == '20141213_L83_007'  # listed in info.json

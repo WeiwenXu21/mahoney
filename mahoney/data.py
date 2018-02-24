@@ -42,7 +42,8 @@ class Neurofinder(Dataset):
     - 'dataset': The Neurofinder code for the video, e.g. '01.00'.
     '''
 
-    def __init__(self, base_path, n_frames=1024, max_data=3000, step=1, subset='train'):
+    def __init__(self, base_path, n_frames=1024, max_data=3000, step=1, subset='train',
+            imread=None, preprocess=None):
         '''Construct a dataset given a path to the data.
 
         Args:
@@ -62,6 +63,11 @@ class Neurofinder(Dataset):
                 Neurofinder codes or one of the strings 'train', 'test', or
                 'all' refering to the train set, test set, or entire set
                 respectivly.
+            imread:
+                Override the function to used read images. The default is
+                determined by dask, currently `skimage.io.imread`.
+            preprocess:
+                A function to apply to each frame.
         '''
         # `subset` may have the special values 'train', 'test', or 'all'
         # mapping to the TRAIN_SET, TEST_SET, or union of the two respectivly.
@@ -75,12 +81,18 @@ class Neurofinder(Dataset):
         self.data = []
         for sub in subset:
             path = f'{base_path}/neurofinder.{sub}'
+
+            x = io.load_instance(path, imread, preprocess)
+
             meta = io.load_metadata(path)
             meta['dataset'] = sub
             (height, width, frames) = meta['dimensions']
-            try: y = io.load_mask(path, shape=(height, width))
-            except FileNotFoundError: y = None
-            x = io.load_instance(path)
+
+            try:
+                y = io.load_mask(path, shape=(height, width))
+            except FileNotFoundError:
+                y = None
+
             stop = min(max_data, len(x) - n_frames + 1)
             for i in range(0, stop, step):
                 self.data.append({

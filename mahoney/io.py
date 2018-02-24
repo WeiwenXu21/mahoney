@@ -9,6 +9,21 @@ import skimage as ski
 import skimage.measure
 
 
+def load_metadata(path):
+    '''Reads the metadata file of a dataset.
+
+    Args:
+        path:
+            The base path to the dataset.
+
+    Returns:
+        The contents of the `info.json` file, deserialized.
+    '''
+    with open(f'{path}/info.json') as fd:
+        meta = json.load(fd)
+    return meta
+
+
 def load_instance(path, imread=None, preprocess=None):
     '''Reads a collection of image files into a dask array.
 

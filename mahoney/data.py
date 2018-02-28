@@ -69,7 +69,9 @@ class Neurofinder(Dataset):
                 Override the function to used read images. The default is
                 determined by dask, currently `skimage.io.imread`.
             preprocess:
-                A function to apply to each frame.
+                A function to apply to each video. The function takes a Dask
+                array of shape (frames, width, height) and should return the
+                processed video.
         '''
         # `subset` may have the special values 'train', 'test', or 'all'
         # mapping to the TRAIN_SET, TEST_SET, or union of the two respectivly.
@@ -84,7 +86,9 @@ class Neurofinder(Dataset):
         for sub in subset:
             path = f'{base_path}/neurofinder.{sub}'
 
-            x = io.load_video(path, imread, preprocess)
+            x = io.load_video(path, imread)
+            if preprocess is not None:
+                x = preprocess(x)
 
             meta = io.load_metadata(path)
             meta['dataset'] = sub

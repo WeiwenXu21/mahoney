@@ -19,7 +19,8 @@ TEST_SET = [
 ]
 
 
-class Neurofinder(Dataset):
+def load_dataset(base_path, *, n=1024, start=0, stop=3000, step=1,
+        subset='train', imread=None, preprocess=None):
     '''A high-level interface to the Neurofinder Challenge dataset.
 
     The Neurofinder dataset is divided into 19 train videos and 9 test videos.
@@ -40,82 +41,69 @@ class Neurofinder(Dataset):
     The 'meta' dict contains the following:
     - All data from `info.json` for the corresponding video.
     - 'dataset': The Neurofinder code for the video, e.g. '01.00'.
+
+    Args:
+        base_path:
+            The path to the data. This must be a directory containing
+            subdirectories with names `neurofinder.DATASET` where `DATASET`
+            is a Neurofinder code, e.g. `01.00`.
+        n:
+            The number of frames in each datum.
+        start:
+            The index of the first frame of the first datum for each video.
+        stop:
+            The maximum number of data taken from each video.
+        step:
+            The number of frames between the first frame of consecutive
+            datum from the same video.
+        subset:
+            The subset of data to consider. This is a collection of
+            Neurofinder codes or one of the strings 'train', 'test', or
+            'all' refering to the train set, test set, or entire set
+            respectivly.
+        imread:
+            Override the function to used read images. The default is
+            determined by dask, currently `skimage.io.imread`.
+        preprocess:
+            A function to apply to each video. The function takes a Dask
+            array of shape (frames, width, height) and should return the
+            processed video.
+
+    Returns:
+        A list of datum.
     '''
+    # `subset` may have the special values 'train', 'test', or 'all'
+    # mapping to the TRAIN_SET, TEST_SET, or union of the two respectivly.
+    if subset == 'train': subset = TRAIN_SET
+    elif subset == 'test': subset = TEST_SET
+    elif subset == 'all': subset = TRAIN_SET + TEST_SET
 
-    def __init__(self, base_path, n=1024, start=0, stop=3000, step=1,
-            subset='train', imread=None, preprocess=None):
-        '''Construct a dataset given a path to the data.
+    data = []
+    for sub in subset:
+        path = f'{base_path}/neurofinder.{sub}'
 
-        Args:
-            base_path:
-                The path to the data. This must be a directory containing
-                subdirectories with names `neurofinder.DATASET` where `DATASET`
-                is a Neurofinder code, e.g. `01.00`.
-            n:
-                The number of frames in each datum.
-            start:
-                The index of the first frame of the first datum for each video.
-            stop:
-                The maximum number of data taken from each video.
-            step:
-                The number of frames between the first frame of consecutive
-                datum from the same video.
-            subset:
-                The subset of data to consider. This is a collection of
-                Neurofinder codes or one of the strings 'train', 'test', or
-                'all' refering to the train set, test set, or entire set
-                respectivly.
-            imread:
-                Override the function to used read images. The default is
-                determined by dask, currently `skimage.io.imread`.
-            preprocess:
-                A function to apply to each video. The function takes a Dask
-                array of shape (frames, width, height) and should return the
-                processed video.
-        '''
-        # `subset` may have the special values 'train', 'test', or 'all'
-        # mapping to the TRAIN_SET, TEST_SET, or union of the two respectivly.
-        if subset == 'train': subset = TRAIN_SET
-        elif subset == 'test': subset = TEST_SET
-        elif subset == 'all': subset = TRAIN_SET + TEST_SET
+        x = io.load_video(path, imread)
+        if preprocess is not None:
+            x = preprocess(x)
 
-        # Collelct the data upfront. It is prefered to do this now rather than
-        # when the data is requested because dask arrays are already managed
-        # out of core memory.
-        self.data = []
-        for sub in subset:
-            path = f'{base_path}/neurofinder.{sub}'
+        meta = io.load_metadata(path)
+        meta['dataset'] = sub
+        (height, width, frames) = meta['dimensions']
 
-            x = io.load_video(path, imread)
-            if preprocess is not None:
-                x = preprocess(x)
+        try:
+            y = io.load_mask(path, shape=(height, width))
+        except FileNotFoundError:
+            y = None
 
-            meta = io.load_metadata(path)
-            meta['dataset'] = sub
-            (height, width, frames) = meta['dimensions']
+        stop = min(stop, len(x) - n + 1)
+        for i in range(start, stop, step):
+            data.append({
+                'x': x[i:i+n],
+                'y': y,
+                'meta': meta
+            })
 
-            try:
-                y = io.load_mask(path, shape=(height, width))
-            except FileNotFoundError:
-                y = None
-
-            stop = min(stop, len(x) - n + 1)
-            for i in range(start, stop, step):
-                self.data.append({
-                    'x': x[i:i+n],
-                    'y': y,
-                    'meta': meta
-                })
-
-    def __len__(self):
-        '''Returns the number of data in this dataset.
-        '''
-        return len(self.data)
-
-    def __getitem__(self, i):
-        '''Retrieves the ith datum from the dataset.
-        '''
-        return self.data[i]
+    return data
 
 
 class Torchify(Dataset):

@@ -6,7 +6,7 @@ import torch
 import mahoney.data as data
 
 
-def test_neurofinder():
+def test_dataset():
     # We take the fitst 8 blocks of 256 frames from video '01.00'.
     # Video '01.00' has 2250 frames at a pixel resolution of 512x512.
     ds = data.load_dataset('./data', n=256, stop=8, subset=['01.00'])

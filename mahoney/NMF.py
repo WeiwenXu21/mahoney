@@ -6,7 +6,7 @@ from mahoney import io
 
 
 def NMF_decomposition(path):
-    '''This is normal NMF decomposition
+    '''This is normal NMF decomposition (using thunder)
         
         Args:
             path:

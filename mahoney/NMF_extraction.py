@@ -6,7 +6,7 @@ from mahoney import io
 
 
 def NMF_extraction(path):
-    '''This is for neuron segmentation only using NMF (from thunder)
+    '''This is for neuron segmentation only using NMF (using thunder)
         
         Args:
             path:
@@ -14,7 +14,7 @@ def NMF_extraction(path):
                 
         Returns:
             coordinates:
-                The coordinates for each neuron.
+                Array of coordinates for each neuron.
                 Length of coordinates will be the number of neuron segmented.
         '''
     # Load in the video. Shape(frames, dims, dims)

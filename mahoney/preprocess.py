@@ -12,8 +12,8 @@ def normalize(x):
     '''
     #Generate a mean image across time
     m = np.mean(x)
-    var = np.var(x)
-    x_norm = (x-m)/var
+    std = np.std(x)
+    x_norm = (x-m)/std
 
     #Create a matrix of variance of each pixel across time
     #Make a normalized dask array of the videos

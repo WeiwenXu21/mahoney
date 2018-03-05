@@ -39,7 +39,7 @@ class VggBlock(N.Module):
 
         # The main layers
         c0 = in_channel
-        for c1 in range(channels):
+        for c1 in channels:
             conv = N.Conv2d(c0, c1, kernel_size=3, padding=1)
             relu = N.ReLU(inplace=True)
             layers += [conv, relu]
@@ -49,9 +49,9 @@ class VggBlock(N.Module):
         # Note that c0 == c1 at this point.
         if resample is not None:
             if resample == 'max': resample = N.MaxPool2d(kernel_size=2)
-            if resample == 'conv': resample = N.Conv2d(c0, c1, kernel_size=2, stride=2)
-            if resample == 'deconv': resample = N.ConvTranspose2d(c0, c1, kernel_size=2, stride=2)
-            if callable(resample): resample = resample(c1)
+            elif resample == 'conv': resample = N.Conv2d(c0, c1, kernel_size=2, stride=2)
+            elif resample == 'deconv': resample = N.ConvTranspose2d(c0, c1, kernel_size=2, stride=2)
+            elif callable(resample): resample = resample(c1)
             layers.append(resample)
 
         self.layers = N.Sequential(*layers)

@@ -205,7 +205,7 @@ class TorchEstimator(BaseEstimator):
         self.net_ = self.module()
         self.opt_ = self.opt_ctorimizer(self.net_)
 
-    def fit(self, x, y, validation=None, epochs=100, patience=None, warm_start=False, **kwargs):
+    def fit(self, x, y, *, validation=None, epochs=100, patience=None, warm_start=False, **kwargs):
         '''Fit the model to a dataset.
 
         Args:
@@ -213,6 +213,8 @@ class TorchEstimator(BaseEstimator):
                 The data to fit.
             y:
                 The labels to fit.
+
+        Kwargs:
             validation:
                 A dataset to use as the validation set.
             epochs:
@@ -222,9 +224,8 @@ class TorchEstimator(BaseEstimator):
                 A negative or falsy value means infinite patience.
             warm_start:
                 If true, start from existing learned parameters if any.
-
-        Kwargs:
-            Forwarded to `TorchEstimator.dataloader`.
+            kwargs:
+                Forwarded to `TorchEstimator.dataloader`.
 
         Returns:
             Returns the validation loss if a validation set is given.
@@ -396,8 +397,17 @@ class TorchClassifier(TorchEstimator):
             y[i] = batch
         return y
 
+    def predict(self, x, **kwargs):
+        '''Override `predict` to support arbitrary class labels.
+
+        Returns:
+            Returns the argmax of the network as a numpy array.
+        '''
+        y = super().predict(x, **kwargs)
+        return self.classes_[y]
+
     def _predict(self, x, **kwargs):
-        '''Override `_predict` to return class labels.
+        '''Override `_predict` to return class indices.
 
         Returns:
             Returns the argmax of the network as a list torch Tensors.
@@ -407,6 +417,13 @@ class TorchClassifier(TorchEstimator):
             _, batch = torch.max(batch, 1)
             y[i] = batch
         return y
+
+    def fit(self, x, y, **kwargs):
+        '''Override `fit` to support arbitrary class labels.
+        '''
+        # Convert y to integers on [0, n_classes)
+        self.classes_, y = np.unique(y, return_inverse=True)
+        return super().fit(x, y, **kwargs)
 
 
 class TorchSegmenter(TorchEstimator):

@@ -19,7 +19,8 @@ TEST_SET = [
 ]
 
 
-class Neurofinder(Dataset):
+def load_dataset(base_path, *, n=1024, start=0, stop=3000, step=1,
+        subset='train', imread=None, preprocess=None):
     '''A high-level interface to the Neurofinder Challenge dataset.
 
     The Neurofinder dataset is divided into 19 train videos and 9 test videos.
@@ -32,120 +33,114 @@ class Neurofinder(Dataset):
     `step` frames from the first frame of the previous datum. Thus data
     overlap if `step < n`.
 
-    Each datum is a dict with the following entries:
-    - 'x': A dask array giving the frames in a datum.
-    - 'y': The label mask or None if it is unknown.
-    - 'meta': A dict of metadata read from `info.json` and more.
+    Args:
+        base_path:
+            The path to the data. This must be a directory containing
+            subdirectories with names `neurofinder.DATASET` where `DATASET`
+            is a Neurofinder code, e.g. `01.00`.
+        n:
+            The number of frames in each datum.
+        start:
+            The index of the first frame of the first datum for each video.
+        stop:
+            The maximum number of data taken from each video.
+        step:
+            The number of frames between the first frame of consecutive
+            datum from the same video.
+        subset:
+            The subset of data to consider. This is a collection of
+            Neurofinder codes or one of the strings 'train', 'test', or
+            'all' refering to the train set, test set, or entire set
+            respectivly.
+        imread:
+            Override the function to used read images. The default is
+            determined by dask, currently `skimage.io.imread`.
+        preprocess:
+            A function to apply to each video. The function takes a Dask
+            array of shape (frames, width, height) and should return the
+            processed video.
 
-    The 'meta' dict contains the following:
-    - All data from `info.json` for the corresponding video.
-    - 'dataset': The Neurofinder code for the video, e.g. '01.00'.
+    Returns:
+        Three lists: `x, y, metadata`. Same indces corresponds to the same instance.
+
+        For each instance:
+        - x is a dask array giving the video as (frames, width, height).
+        - y is a label mask or None if it is unknown.
+        - meta is a dict of metadata.
+
+        A metadata dict contains the following:
+        - All data from `info.json` for the instance.
+        - 'dataset': The Neurofinder code for the video, e.g. '01.00'.
     '''
+    # `subset` may have the special values 'train', 'test', or 'all'
+    # mapping to the TRAIN_SET, TEST_SET, or union of the two respectivly.
+    if subset == 'train': subset = TRAIN_SET
+    elif subset == 'test': subset = TEST_SET
+    elif subset == 'all': subset = TRAIN_SET + TEST_SET
 
-    def __init__(self, base_path, n=1024, start=0, stop=3000, step=1,
-            subset='train', imread=None, preprocess=None):
-        '''Construct a dataset given a path to the data.
+    x = []
+    y = []
+    metadata = []
+    for sub in subset:
+        path = f'{base_path}/neurofinder.{sub}'
 
-        Args:
-            base_path:
-                The path to the data. This must be a directory containing
-                subdirectories with names `neurofinder.DATASET` where `DATASET`
-                is a Neurofinder code, e.g. `01.00`.
-            n:
-                The number of frames in each datum.
-            start:
-                The index of the first frame of the first datum for each video.
-            stop:
-                The maximum number of data taken from each video.
-            step:
-                The number of frames between the first frame of consecutive
-                datum from the same video.
-            subset:
-                The subset of data to consider. This is a collection of
-                Neurofinder codes or one of the strings 'train', 'test', or
-                'all' refering to the train set, test set, or entire set
-                respectivly.
-            imread:
-                Override the function to used read images. The default is
-                determined by dask, currently `skimage.io.imread`.
-            preprocess:
-                A function to apply to each video. The function takes a Dask
-                array of shape (frames, width, height) and should return the
-                processed video.
-        '''
-        # `subset` may have the special values 'train', 'test', or 'all'
-        # mapping to the TRAIN_SET, TEST_SET, or union of the two respectivly.
-        if subset == 'train': subset = TRAIN_SET
-        elif subset == 'test': subset = TEST_SET
-        elif subset == 'all': subset = TRAIN_SET + TEST_SET
+        meta = io.load_metadata(path)
+        meta['dataset'] = sub
+        (height, width, frames) = meta['dimensions']
 
-        # Collelct the data upfront. It is prefered to do this now rather than
-        # when the data is requested because dask arrays are already managed
-        # out of core memory.
-        self.data = []
-        for sub in subset:
-            path = f'{base_path}/neurofinder.{sub}'
+        vid = io.load_video(path, imread)
+        if preprocess is not None:
+            vid = preprocess(vid)
 
-            x = io.load_video(path, imread)
-            if preprocess is not None:
-                x = preprocess(x)
+        try:
+            mask = io.load_mask(path, shape=(height, width))
+        except FileNotFoundError:
+            mask = None
 
-            meta = io.load_metadata(path)
-            meta['dataset'] = sub
-            (height, width, frames) = meta['dimensions']
+        stop = min(stop, len(vid) - n + 1)
+        for i in range(start, stop, step):
+            x.append(vid[i:i+n])
+            y.append(mask)
+            metadata.append(meta)
 
-            try:
-                y = io.load_mask(path, shape=(height, width))
-            except FileNotFoundError:
-                y = None
-
-            stop = min(stop, len(x) - n + 1)
-            for i in range(start, stop, step):
-                self.data.append({
-                    'x': x[i:i+n],
-                    'y': y,
-                    'meta': meta
-                })
-
-    def __len__(self):
-        '''Returns the number of data in this dataset.
-        '''
-        return len(self.data)
-
-    def __getitem__(self, i):
-        '''Retrieves the ith datum from the dataset.
-        '''
-        return self.data[i]
+    return x, y, metadata
 
 
 class Torchify(Dataset):
-    '''Adapts a Neurofinder dataset to a more PyTorch-friendly format.
+    '''Adapts a sklearn-style dask dataset to a torch-style dataset.
 
-    The new data are tripples of the form `(x, y, code)` where `x` is a numpy
-    array for the datum, `y` is the label mask or the string 'N/A', and `code`
-    is the Neurofinder code for the video from which the datum was taken.
+    A Torchify dataset zips a pair of lists into a list of pairs. If either
+    half is a dask array (or any other object with a `compute` method) it is
+    replaced by its computed value.
 
     This format works in conjunction with the PyTorch `DataLoader` class, an
     iterator with performance and convenience features for PyTorch based
     models.
     '''
 
-    def __init__(self, ds):
-        '''Creates a torchified version of a Neurofinder dataset.
+    def __init__(self, x, y=None):
+        '''Creates a torchified version of the sklearn dataset.
+
+        If `y` is is falsy, The second halves will always be None.
+
+        Args:
+            x: A list of the first halves of the pairs.
+            y: A list of the second halves of the pairs.
         '''
-        self.ds = ds
+        if y: assert len(x) == len(y)
+        self.x = x
+        self.y = y
 
     def __len__(self):
         '''Returns the number of data in this dataset.
         '''
-        return len(self.ds)
+        return len(self.x)
 
     def __getitem__(self, i):
         '''Retrieves the ith datum from the dataset.
         '''
-        d = self.ds[i]
-        x = d['x'].compute()
-        y = d['y']
-        if y is None: y = 'N/A'
-        code = d['meta']['dataset']
-        return x, y, code
+        x = self.x[i]
+        y = self.y[i] if self.y else None
+        if hasattr(x, 'compute'): x = x.compute()
+        if hasattr(y, 'compute'): y = y.compute()
+        return x, y

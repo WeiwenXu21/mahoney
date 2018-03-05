@@ -6,35 +6,35 @@ import torch
 import mahoney.data as data
 
 
-def test_neurofinder():
+def test_dataset():
     # We take the fitst 8 blocks of 256 frames from video '01.00'.
     # Video '01.00' has 2250 frames at a pixel resolution of 512x512.
-    ds = data.Neurofinder('./data', n=256, stop=8, subset=['01.00'])
-    assert len(ds) == 8
+    x, y, meta = data.load_dataset('./data', n=256, stop=8, subset=['01.00'])
+    assert len(x) == len(y) == len(meta) == 8
 
     # We can successfully iterate over the dataset.
-    for i in range(len(ds)):
-        assert ds[i]['x'].shape == (256, 512, 512)  # 256 frames per datum
-        assert ds[i]['y'].shape == (2, 512, 512)  # 2 classes, background and foreground
-        assert ds[i]['x'].dtype == 'float64'
-        assert ds[i]['y'].dtype == 'int64'
-        assert isinstance(ds[i]['x'], da.Array)
-        assert isinstance(ds[i]['y'], np.ndarray)
+    for i in range(8):
+        assert x[i].shape == (256, 512, 512)  # 256 frames per datum
+        assert x[i].dtype == 'float64'
+        assert y[i].shape == (2, 512, 512)  # 2 classes, background and foreground
+        assert y[i].dtype == 'int64'
+        assert isinstance(x[i], da.Array)
+        assert isinstance(y[i], np.ndarray)
+        assert isinstance(meta[i], dict)
 
 
 def test_torchify():
     # We take the fitst 8 blocks of 256 frames from video '01.00'.
     # Video '01.00' has 2250 frames at a pixel resolution of 512x512.
-    ds = data.Neurofinder('./data', n=256, stop=8, subset=['01.00'])
-    ds = data.Torchify(ds)
+    x, y, meta = data.load_dataset('./data', n=256, stop=8, subset=['01.00'])
+    ds = data.Torchify(x, y)
     assert len(ds) == 8
 
     # We can successfully iterate over the dataset.
     for i in range(len(ds)):
-        x, y, code = ds[i]
+        x, y = ds[i]
         assert x.shape == (256, 512, 512)  # 256 frames per datum
         assert y.shape == (2, 512, 512)  # 2 classes, background and foreground
-        assert code == '01.00'
         assert x.dtype == 'float64'
         assert y.dtype == 'int64'
         assert isinstance(x, np.ndarray)
@@ -44,16 +44,37 @@ def test_torchify():
 def test_dataloader():
     # We take the fitst 8 blocks of 256 frames from video '01.00'.
     # Video '01.00' has 2250 frames at a pixel resolution of 512x512.
-    ds = data.Neurofinder('./data', n=256, stop=8, subset=['01.00'])
-    ds = data.Torchify(ds)
+    x, y, meta = data.load_dataset('./data', n=256, stop=8, subset=['01.00'])
+    ds = data.Torchify(x, y)
     assert len(ds) == 8
 
     # We can successfully iterate over the dataset.
     loader = torch.utils.data.DataLoader(ds, batch_size=4)
     for batch in loader:
-        x, y, code = batch
+        x, y = batch
         assert x.shape == (4, 256, 512, 512)  # batch of 4, 256 frames per datum
         assert y.shape == (4, 2, 512, 512)  # 2 classes, background and foreground
-        assert code == ('01.00',) * 4  # 1 code for each example in the batch
         assert isinstance(x, torch.DoubleTensor)
         assert isinstance(y, torch.LongTensor)
+
+
+def test_gridsearch():
+    from sklearn.base import BaseEstimator
+    from sklearn.model_selection import GridSearchCV
+
+    # Grid search over a stub estimator with one dummy param
+    class StubEstimator(BaseEstimator):
+        def __init__(self, foo=1):
+            self.foo = foo
+        def score(self, x, y):
+            return self.foo
+        def fit(self, x, y):
+            assert isinstance(x[0], da.Array)
+            assert isinstance(y[0], np.ndarray)
+            return self
+
+    # The dataset should be compatible with GridSearchCV
+    x, y, meta = data.load_dataset('./data', n=256, stop=8, subset=['01.00'])
+    stub = StubEstimator(foo=1)
+    grid_stub = GridSearchCV(stub, {'foo': [1,2,3]})
+    grid_stub.fit(x, y)

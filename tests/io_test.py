@@ -32,7 +32,8 @@ def test_lossless():
     assert len(true_rois) == 4
     assert len(processed_rois) == 4
 
-    # The structures should be the same modulo some ordering
+    # The ROIs should match (up to ordering) because
+    # the true_rois are contiguous and non-overlapping
     for rois in [true_rois, processed_rois]:
         for i, roi in enumerate(rois):
             rois[i] = sorted(roi['coordinates'])
@@ -49,3 +50,24 @@ def test_from_file():
     assert im.shape == (2250, 512, 512)  # 2250 frames at 512x512 resolution
     assert mask.shape == (2, 512, 512)  # 2 classes, background and foreground
     assert meta['id'] == '20141213_L83_007'  # listed in info.json
+
+
+def test_dump():
+    true_rois = json.loads(contiguous_nonoverlap)
+    mask = io.rois_to_mask(true_rois)
+
+    # Dump the masks to a structure, but not to file.
+    out = io.dump_rois({'foo': mask}, file=None)
+    assert isinstance(out, list)
+    assert len(out) == 1
+    assert sorted(out[0].keys()) == ['dataset', 'regions']
+    assert out[0]['dataset'] == 'foo'
+
+    # The ROIs should match (up to ordering) because
+    # the true_rois are contiguous and non-overlapping
+    processed_rois = out[0]['regions']
+    for rois in [true_rois, processed_rois]:
+        for i, roi in enumerate(rois):
+            rois[i] = sorted(roi['coordinates'])
+        rois.sort()
+    assert processed_rois == true_rois

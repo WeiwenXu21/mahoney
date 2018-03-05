@@ -1,4 +1,5 @@
 import json
+import sys
 
 import dask.array as da
 import dask.array.image
@@ -138,3 +139,33 @@ def mask_to_rois(mask):
         rois.append({'coordinates': coords})
 
     return rois
+
+
+def dump_rois(masks, file=sys.stdout, **kwargs):
+    '''Dumps a collection of masks to a JSON file.
+
+    Protip: pass `indent=2` for the output to be pretty printed.
+
+    Args:
+        masks:
+            A dict mapping Neurofinder codes (e.g. '01.00') to region masks.
+        file:
+            The file to write into.
+        kwargs:
+            Forwarded to `json.dump`. If None, don't write to file.
+
+    Returns:
+        The structure that is dumpped. A list of dicts.
+    '''
+    regions = []
+    for dataset, mask in masks.items():
+        rois = mask_to_rois(mask)
+        regions.append({
+            'dataset': dataset,
+            'regions': rois,
+        })
+
+    if file is not None:
+        json.dump(regions, file, **kwargs)
+
+    return regions

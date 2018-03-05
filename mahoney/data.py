@@ -128,7 +128,7 @@ class Torchify(Dataset):
             x: A list of the first halves of the pairs.
             y: A list of the second halves of the pairs.
         '''
-        if y: assert len(x) == len(y)
+        if y is not None: assert len(x) == len(y)
         self.x = x
         self.y = y
 
@@ -141,7 +141,14 @@ class Torchify(Dataset):
         '''Retrieves the ith datum from the dataset.
         '''
         x = self.x[i]
-        y = self.y[i] if self.y else None
+        y = self.y[i] if self.y is not None else None
         if hasattr(x, 'compute'): x = x.compute()
         if hasattr(y, 'compute'): y = y.compute()
-        return x, y
+
+        # Always cast x to the default type.
+        x = torch.Tensor(x)
+
+        if y is not None:
+            return x, y
+        else:
+            return x

@@ -16,9 +16,10 @@ class NMF_dcomp(BaseEstimator, ClassifierMixin):
             meta: meta data from load dataset including "dataset"(i.e. : 01.00)
         '''
         self.k = k
-    def fit(self, X, y=None):
+    def fit(self, X):
         frames, dim1, dim2 = np.shape(X)
         full_img = X.reshape((frames,dim1*dim2))
+
         # Build and fit the model. Default: k=5
         algorithm = factorization.NMF(k=self.k)
         W, H = algorithm.fit(full_img)
@@ -38,9 +39,11 @@ class NMF_extract(BaseEstimator, ClassifierMixin):
             meta: meta data from load dataset including "dataset"(i.e. : 01.00)
         '''
         self.k = k
-    def fit(self, X, y=None):
+
+    def fit(self, X):
         algorithm = extraction.NMF(k=self.k)
         model = algorithm.fit(X)
+
         # The region of neurons found.
         regions = model.regions
         coordinates = regions.coordinates

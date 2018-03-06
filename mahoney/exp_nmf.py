@@ -13,4 +13,5 @@ TEST_SET = [
     '02.01.test', '03.00.test', '04.00.test', '04.01.test'
 ]
 
-fo
+for vid in TEST_SET:
+    path = "../data/neurofinder{vid}"

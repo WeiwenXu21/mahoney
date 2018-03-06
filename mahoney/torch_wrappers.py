@@ -24,7 +24,7 @@ class TorchEstimator(BaseEstimator):
     '''Wraps a torch network, optimizer, and loss to an sklearn-like estimator.
     '''
 
-    def __init__(self, net_ctor, loss_fn, opt_ctor='SGD', cuda=None,
+    def __init__(self, net_ctor, loss_fn, opt_ctor='SGD', lr=1e-3, cuda=None,
             name_prefix='model', dry_run=False):
         '''Create an estimator implemented by a torch module.
 
@@ -38,6 +38,8 @@ class TorchEstimator(BaseEstimator):
                 A constructor for the optimizer to use for training.
                 Alternativly, a string may be passed to represent a member of
                 `torch.optim` with default hyperparameters.
+            lr:
+                The learning rate to pass to `opt_ctor`.
             cuda:
                 A list of cuda device ids to use. Defaults to all devices.
             name_prefix:
@@ -48,6 +50,7 @@ class TorchEstimator(BaseEstimator):
         self.net_ctor = net_ctor
         self.loss_fn = loss_fn
         self.opt_ctor = opt_ctor
+        self.lr = lr
         self.cuda = cuda
         self.name_prefix = name_prefix
         self.dry_run = dry_run
@@ -80,7 +83,7 @@ class TorchEstimator(BaseEstimator):
             ctor = getattr(O, self.opt_ctor)
         else:
             ctor = self.opt_ctor
-        return ctor(module.parameters, **kwargs)
+        return ctor(module.parameters(), **kwargs)
 
     def dataloader(self, x, y=None, **kwargs):
         '''Create a DataLoader from a sklearn-style dataset.
@@ -105,7 +108,7 @@ class TorchEstimator(BaseEstimator):
         '''
         kwargs.setdefault('shuffle', True)
         kwargs.setdefault('pin_memory', self.cuda)
-        dl = Torchify(x, y)
+        dl = data.Torchify(x, y)
         dl = D.DataLoader(dl, **kwargs)
         return dl
 
@@ -136,7 +139,7 @@ class TorchEstimator(BaseEstimator):
         h = hash(params)
         h = h + 1 << 64  # make unsigned
         h = hex(h)[2:].rjust(16, '0')  # turn into a hex string
-        return f'{name_prefix}_{h}'
+        return f'{self.name_prefix}_{h}'
 
     def variable(self, x, **kwargs):
         '''Cast a tensor to a `Variable` on the same device as the network.
@@ -201,9 +204,10 @@ class TorchEstimator(BaseEstimator):
     def initialize(self, warm_start=False):
         '''Initializes the module and optimizer.
         '''
+        # Do not change anything on a warm start if the network already exists.
         if warm_start and hasattr(self, 'net_'): return
         self.net_ = self.module()
-        self.opt_ = self.opt_ctorimizer(self.net_)
+        self.opt_ = self.optimizer(self.net_, lr=self.lr)
 
     def fit(self, x, y, *, validation=None, epochs=100, patience=None, warm_start=False, **kwargs):
         '''Fit the model to a dataset.
@@ -297,8 +301,10 @@ class TorchEstimator(BaseEstimator):
         y = self.variable(y)
         h = self.net_(x)
         j = self.loss(h, y)
+        j = j.mean()
+        j.backward()
         self.opt_.step()
-        return j.data.mean()
+        return j.data
 
     def predict(self, x, **kwargs):
         '''Apply the network to some input batch.
@@ -320,7 +326,7 @@ class TorchEstimator(BaseEstimator):
         '''
         y = self._predict(x, **kwargs)
         y = torch.cat(y)
-        return y.cpu().numpy()
+        return y.data.cpu().numpy()
 
     def _predict(self, x, **kwargs):
         '''The torch-side implementation of `predict`.
@@ -335,7 +341,7 @@ class TorchEstimator(BaseEstimator):
 
         y = []
         self.net_.eval()
-        for batch in  self.dataloader(x, **kwargs):
+        for batch in self.dataloader(x, **kwargs):
             batch = self.variable(batch, volatile=True)
             predicted = self.net_(batch)
             y.append(predicted)
@@ -355,14 +361,14 @@ class TorchEstimator(BaseEstimator):
         loss = accumulators.Mean()
         self.net_.eval()
         for x, y in self.dataloader(x, y, **kwargs):
-            x = self.variable(x)
-            y = self.variable(y)
+            x = self.variable(x, volatile=True)
+            y = self.variable(y, volatile=True)
             h = self.net_(x)
             j = self.loss(h, y, reduce=False)
             loss.accumulate(j)
         loss = loss.reduce()
         if invert: loss = 1 / loss
-        return loss.cpu().numpy()
+        return loss.data.cpu().numpy()
 
 
 class TorchClassifier(TorchEstimator):
@@ -434,14 +440,15 @@ class TorchSegmenter(TorchEstimator):
     def loss(self, h, y, **kwargs):
         kwargs.setdefault('reduce', False)
 
-        (count, channels, width, height) = h.shape
+        (count, channels, height, width) = h.shape
         h = h.permute(0, 2, 3, 1)
-        h = h.view(count * width * height, channels)
+        h = h.contiguous()
+        h = h.view(count * height * width, channels)
 
-        (count, width, height) = y.shape
-        y = y.view(count * width * height)
+        (count, height, width) = y.shape
+        y = y.view(count * height * width)
 
         j = self.loss_fn(h, y, **kwargs)
         if not kwargs['reduce']:
-            j = j.view(count, width, height)
+            j = j.view(count, height, width)
         return j

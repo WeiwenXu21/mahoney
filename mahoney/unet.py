@@ -25,6 +25,12 @@ class _Vgg(N.Module):
             self.layers += [conv, relu]
             c0 = c1
 
+        # Initialize weights
+        for m in self.layers:
+            if not isinstance(m, N.BatchNorm2d):
+                if hasattr(m, 'weight'): N.init.kaiming_uniform(m.weight)
+                if hasattr(m, 'bias'): m.bias.data.fill_(0)
+
     def forward(self, x):
         for layer in self.layers:
             x = layer(x)

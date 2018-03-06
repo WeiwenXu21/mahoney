@@ -142,11 +142,10 @@ class Torchify(Dataset):
         '''
         x = self.x[i]
         y = self.y[i] if self.y is not None else None
+
+        # Collect to numpy if we have Dask arrays
         if hasattr(x, 'compute'): x = x.compute()
         if hasattr(y, 'compute'): y = y.compute()
-
-        # Always cast x to the default type.
-        x = torch.Tensor(x)
 
         if y is not None:
             return x, y

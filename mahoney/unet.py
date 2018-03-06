@@ -5,93 +5,99 @@ import torch.nn as N
 import torch.nn.functional as F
 
 
-class VggBlock(N.Module):
-    '''A VGG-like block of convolution layers.
-
-    A VggBlock is a series of convolutions optionally followed by some
-    resampling layer. Each convolution uses a 3x3 kernel with a stride 1
-    and padding to ensure each output maintains spatial dimension.
-
-    After the main convolutions, the output may be resampled. The `resample`
-    argument can be a torch Module to use for resampling, a function which
-    accepts a channel size and returns a torch Module, or one of a string
-    specifying a known resample operation.
+class Vgg(N.Module):
+    '''A simple block of 3x3 convolutions.
     '''
-
-    def __init__(self, in_channel, *channels, resample=None):
-        '''Construct a VggBlock given a list of channel dimensions.
-
-        Args:
-            in_channel:
-                The number of channels in the input.
-            channels:
-                A list of output channels, one for each conv layer.
-            resample:
-                The resample operation. It may be a torch Module, a function
-                which takes the channel size and returns a torch Module, or one
-                of the following strings:
-                - 'max': max pooling with stride 2.
-                - 'conv': 2x2 convolution with stride 2.
-                - 'deconv': 2x2 convolution with fractional stride 1/2.
-        '''
+    def __init__(self, in_channel, *channels):
         super().__init__()
-        layers = []
-
-        # The main layers
+        self.layers = []
         c0 = in_channel
         for c1 in channels:
             conv = N.Conv2d(c0, c1, kernel_size=3, padding=1)
             relu = N.ReLU(inplace=True)
-            layers += [conv, relu]
+            self.layers += [conv, relu]
             c0 = c1
 
-        # The resample layer.
-        # Note that c0 == c1 at this point.
-        if resample is not None:
-            if resample == 'max': resample = N.MaxPool2d(kernel_size=2)
-            elif resample == 'conv': resample = N.Conv2d(c0, c1, kernel_size=2, stride=2)
-            elif resample == 'deconv': resample = N.ConvTranspose2d(c0, c1, kernel_size=2, stride=2)
-            elif callable(resample): resample = resample(c1)
-            layers.append(resample)
+    def forward(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
 
-        self.layers = N.Sequential(*layers)
+
+class _DownBlock(N.Module):
+    '''A downward block for U-Net.
+    '''
+    def __init__(self, in_channel, *channels, base=Vgg):
+        super().__init__()
+        self.conv = base(in_channel, *channels)
+        self.resample = N.MaxPool2d(2)
 
     def forward(self, x):
-        return self.layers.forward(x)
+        skip = self.conv(x)
+        out = self.resample(skip)
+        return out, skip
+
+
+class _UpBlock(N.Module):
+    '''An upward block for U-Net.
+    '''
+    def __init__(self, in_channel, *channels, base=Vgg):
+        super().__init__()
+        self.conv = base(in_channel, *channels)
+        self.resample = N.ConvTranspose2d(channels[-1], channels[-1]//2, kernel_size=2, stride=2)
+
+    def forward(self, x, skip):
+        conv = self.conv(x)
+        up = self.resample(conv, output_size=skip.shape)
+        out = torch.cat((up, skip), 1)
+        return out
 
 
 class UNet(N.Module):
     '''A fully convolutional network based on U-Net.
     '''
-    def __init__(self, n_channels, n_classes, block=VggBlock):
+    def __init__(self, n_channels, n_classes, depth=4, size=1024, block=Vgg):
         super().__init__()
 
-        self.down1 = block(n_channels, 64, 64, resample='max')
-        self.down2 = block(64, 128, 128, resample='max')
-        self.down3 = block(128, 256, 256, resample='max')
-        self.down4 = block(256, 512, 512, resample='max')
+        # Input
+        c = size >> depth
+        c0 = c // 2
+        self.input = block(n_channels, c0)
 
-        self.bottom = block(512, 1024, 512, resample='deconv')
+        # Down
+        self.down = []
+        for i in range(depth):
+            self.down.append(_DownBlock(c0, c, c, base=block))
+            c0 = c
+            c *= 2
 
-        self.up4 = block(512+512, 512, 256, resample='deconv')
-        self.up3 = block(256+256, 256, 128, resample='deconv')
-        self.up2 = block(128+128, 128, 64, resample='deconv')
-        self.up1 = block(64+64, 64, resample=None)
+        # Up
+        self.up = []
+        for i in range(depth):
+            self.up.append(_UpBlock(c0, c, c, base=block))
+            c0 = c
+            c //= 2
 
-        self.output = N.Conv2d(64, n_classes, kernel_size=1)
-
-    def cat(self, a, b):
-        return torch.cat((a, b), 1)
+        # Output
+        self.top = block(c0, c, c)
+        self.output = N.Conv2d(c, n_classes, kernel_size=1)
 
     def forward(self, x):
-        down1 = self.down1(x)
-        down2 = self.down2(down1)
-        down3 = self.down3(down2)
-        down4 = self.down4(down3)
-        bottom = self.bottom(down4)
-        up4 = self.up4(self.cat(bottom, down4))
-        up3 = self.up3(self.cat(up4, down3))
-        up2 = self.up2(self.cat(up3, down2))
-        up1 = self.up1(self.cat(up2, down1))
-        h = self.output(up1)
-        return h
+        # Input
+        x = self.input(x)
+
+        # Down
+        skip = []
+        for down in self.down:
+            x, s = down(x)
+            skip.append(s)
+
+        # Up
+        skip = list(reversed(skip))
+        for s, up in zip(skip, self.up):
+            x = up(x, s)
+
+        # Output
+        x = self.top(x)
+        x = self.output(x)
+        return x

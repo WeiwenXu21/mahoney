@@ -106,8 +106,7 @@ def rois_to_mask(rois, shape=(512,512)):
         coords = roi['coordinates']
         for y, x in coords:
             fg[y, x] = 1
-    bg = (fg == 0).astype('int64')
-    return np.stack([bg, fg])
+    return fg
 
 
 def mask_to_rois(mask):

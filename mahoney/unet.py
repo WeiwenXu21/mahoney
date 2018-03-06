@@ -112,14 +112,18 @@ class UNet(N.Module):
         # Down
         self.down = []
         for i in range(depth):
-            self.down.append(_DownBlock(c0, c, c, block_type=block_type))
+            down = _DownBlock(c0, c, c, block_type=block_type)
+            self.add_module(f'down{i}', down)
+            self.down.append(down)
             c0 = c
             c *= 2
 
         # Up
         self.up = []
         for i in range(depth):
-            self.up.append(_UpBlock(c0, c, c, block_type=block_type))
+            up = _UpBlock(c0, c, c, block_type=block_type)
+            self.add_module(f'up{i}', up)
+            self.up.append(up)
             c0 = c
             c //= 2
 

@@ -17,16 +17,18 @@ class _Vgg(N.Module):
     '''
     def __init__(self, in_channel, *channels):
         super().__init__()
-        self.layers = []
+        layers = []
         c0 = in_channel
         for c1 in channels:
             conv = N.Conv2d(c0, c1, kernel_size=3, padding=1)
             relu = N.ReLU(inplace=True)
-            self.layers += [conv, relu]
+            layers += [conv, relu]
             c0 = c1
 
+        self.layers = N.Sequential(*layers)
+
         # Initialize weights
-        for m in self.layers:
+        for m in layers:
             if not isinstance(m, N.BatchNorm2d):
                 if hasattr(m, 'weight'): N.init.kaiming_uniform(m.weight)
                 if hasattr(m, 'bias'): m.bias.data.fill_(0)

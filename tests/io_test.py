@@ -48,7 +48,7 @@ def test_from_file():
     meta = io.load_metadata('./data/neurofinder.01.00')
 
     assert im.shape == (2250, 512, 512)  # 2250 frames at 512x512 resolution
-    assert mask.shape == (2, 512, 512)  # 2 classes, background and foreground
+    assert mask.shape == (512, 512)
     assert meta['id'] == '20141213_L83_007'  # listed in info.json
 
 

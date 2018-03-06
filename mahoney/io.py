@@ -128,7 +128,6 @@ def mask_to_rois(mask):
         coordinates belonging to that region of interest.
     '''
     # Separate the regions of interest from each other.
-    mask = mask[1]  # Just use the foreground.
     mask = ski.measure.label(mask, connectivity=1)
 
     rois = []

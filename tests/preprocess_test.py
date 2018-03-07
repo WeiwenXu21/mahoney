@@ -1,6 +1,9 @@
 import dask.array as da
 import numpy as np
 import mahoney.preprocess as pp
+import mahoney.io as io
+
+
 
 def test_normalize():
     arr = np.random.normal(loc=0, scale=10, size=(10, 5, 5))
@@ -15,3 +18,9 @@ def test_normalize():
     dout = pp.normalize(darr)
     assert isinstance(darr, da.Array)
     assert isinstance(dout, da.Array)
+def test_opening():
+    img = io.load_video('./data/neurofinder.00.00.test')[0]
+    out = pp.opening(img)
+    assert img is not out
+    plt.imshow(img)
+    plt.imshow(out)

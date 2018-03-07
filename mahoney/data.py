@@ -19,8 +19,8 @@ TEST_SET = [
 ]
 
 
-def load_dataset(base_path, *, n=1024, start=0, stop=3000, step=1,
-        subset='train', imread=None, preprocess=None):
+def load_dataset(base_path, subset='train', n=3000, *, frames=32, skip=1, step=1,
+        imread=None, preprocess=None):
     '''A high-level interface to the Neurofinder Challenge dataset.
 
     The Neurofinder dataset is divided into 19 train videos and 9 test videos.
@@ -29,9 +29,9 @@ def load_dataset(base_path, *, n=1024, start=0, stop=3000, step=1,
     video, there is a single ground truth segmentation of the neurons.
 
     This dataset generates multiple data from each video by taking blocks of
-    `n` contiguous fames. The first frame of each datum is separated by
+    `frames` contiguous fames. The first frame of each datum is separated by
     `step` frames from the first frame of the previous datum. Thus data
-    overlap if `step < n`.
+    overlap if `step < frames`.
 
     Args:
         base_path:
@@ -39,11 +39,11 @@ def load_dataset(base_path, *, n=1024, start=0, stop=3000, step=1,
             subdirectories with names `neurofinder.DATASET` where `DATASET`
             is a Neurofinder code, e.g. `01.00`.
         n:
-            The number of frames in each datum.
-        start:
-            The index of the first frame of the first datum for each video.
-        stop:
             The maximum number of data taken from each video.
+        frames:
+            The number of frames in each datum.
+        skip:
+            TODO: Document
         step:
             The number of frames between the first frame of consecutive
             datum from the same video.
@@ -86,7 +86,7 @@ def load_dataset(base_path, *, n=1024, start=0, stop=3000, step=1,
 
         meta = io.load_metadata(path)
         meta['dataset'] = sub
-        (height, width, frames) = meta['dimensions']
+        (height, width, total_frames) = meta['dimensions']
 
         vid = io.load_video(path, imread)
         if preprocess is not None:
@@ -97,11 +97,12 @@ def load_dataset(base_path, *, n=1024, start=0, stop=3000, step=1,
         except FileNotFoundError:
             mask = None
 
-        stop = min(stop, len(vid) - n + 1)
-        for i in range(start, stop, step):
-            x.append(vid[i:i+n])
-            y.append(mask)
-            metadata.append(meta)
+        for i in range(0, n, step):
+            v = vid[i : i+frames*skip : skip]
+            if len(v) == frames:
+                x.append(v)
+                y.append(mask)
+                metadata.append(meta)
 
     return x, y, metadata
 

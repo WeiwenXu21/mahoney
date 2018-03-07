@@ -215,21 +215,9 @@ def caiman_cnmf(fname, video, test=False):
     A = cnm.A.tocsc()[:, idx_components]
     A = csc_matrix(A).toarray()
     cm.stop_server()
+    dview.terminate()
 
     log_files = glob.glob('Yr*')
     for log_file in log_files:
         os.remove(log_file)
     return A
-
-
-
-
-
-
-
-
-
-
-
-
-

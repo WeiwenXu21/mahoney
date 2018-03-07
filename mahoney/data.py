@@ -153,7 +153,10 @@ class Torchify(Dataset):
         if hasattr(x, 'compute'): x = x.compute()
         if hasattr(y, 'compute'): y = y.compute()
 
-        if y is not None:
+        # If `self.y` was not given, we have nothing to return.
+        # Note that `y` may still be None because `self.y` may mix datasets
+        # with and without labels.
+        if self.y is not None:
             return x, y
         else:
             return x

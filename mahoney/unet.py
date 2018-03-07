@@ -80,8 +80,8 @@ class UNet(N.Module):
     https://arxiv.org/abs/1505.04597
 
     This architecture differs slightly from the original in that it includes
-    an extra convolution on the input which makes it easier to have a flexible
-    architecture.
+    an extra convolution on the input which steps up the channel count to the
+    size of the first "down block".
     '''
 
     def __init__(self, n_channels, n_classes, depth=4, size=1024, block_type='vgg'):
@@ -108,7 +108,7 @@ class UNet(N.Module):
 
         # Input
         c = size >> depth
-        c0 = c // 2
+        c0 = c
         self.input = block(n_channels, c0)
 
         # Down

@@ -43,6 +43,7 @@ We provide two modules for interfacing with the data.
 
 The `mahoney.io` module contains low-level routines to load Neurofinder videos as dask arrays, to load region files as both structured objects and segmentation masks, and to load metadata files. This is the most convenient interface for interactive data exploration.
 
+
 The `mahoney.data` module exports a higher-level interface. The `mahoney.data.Neurofinder` class provides a cohesive view of the entire dataset, out of core. It breaks each video into multiple, consistently shaped datum by considering the subvideos of a given length, and returns the corresponding metadata and labels (if available) simultaneously with each datum. The `mahoney.data.Torchify` adapter wraps a `Neurofinder` dataset into a form compatible with PyTorch's `DataLoader`, an iterator with high-performance and convenience features like shuffling, batching, prefetching, and CUDA pinned memory.
 
 The `mahoney.preprocess` module contains functions that can be called in `mahoney.data.load_dataset` to preprocess the raw video. It includes options to normalize or open the video frames. Opening the video refers to erosion and dilation performed in succession.

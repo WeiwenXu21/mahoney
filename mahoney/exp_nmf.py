@@ -1,6 +1,7 @@
 import mahoney.nmf as nmf
 import mahoney.io as io
 import mahoney.preprocess as preprocess
+import mahoney.data as data
 from scipy.misc import imread
 from glob import glob
 import numpy as np
@@ -15,24 +16,23 @@ def std_nmf(cloud=False):
     output = []
     for vid in TEST_SET:
         tempdict = {}
-        path = f'./data/neurofinder.{vid}'
-        video = io.load_video(path=path, preprocess=preprocess.normalize)
-        rois = [{"coordinates": [list(k) for k in i]} for i in nmf.nmf_extraction(video, k=5)]
+        video, y, meta = data.load_dataset(base_path='./data', subset=[vid], preprocess=preprocess.ed_open, frames=1000)
+        rois = [{"coordinates": [list(k) for k in i]} for i in nmf.nmf_extraction(np.dstack(video[0]), k=10)]
         tempdict["dataset"]=vid
         tempdict["regions"]=rois
         print(tempdict["regions"][0])
         output.append(tempdict)
-    json.dumps(output)
+    str_out = json.dumps(output, default=lambda x: int(x))
+    print(str_out)
 
 def property_nmf():
     output = []
-    for vid in TEST_SET:
+    for vid in [TEST_SET]:
         tempdict = {}
-        path = f'./data/neurofinder.{vid}'
-        video = io.load_video(path=path, imread=opencv, preprocess=preprocess.ed_open)
-        rois = [{"coordinates": [list(k) for k in i]} for i in nmf.nmf_extraction(video, k=5)]
+        video, y, meta = data.load_dataset(base_path='./data', subset=[vid], preprocess=preprocess.ed_open, frames=1000)
+        rois = [{"coordinates": [list(k) for k in i]} for i in nmf.nmf_extraction(np.dstack(video[0]), k=10)]
         tempdict["dataset"]=vid
         tempdict["regions"]=rois
-        print(tempdict["regions"][0])
         output.append(tempdict)
-    json.dumps(output)
+    str_out = json.dumps(output, default=lambda x: int(x), fp=)
+    print(str_out)

@@ -44,3 +44,15 @@ We provide two modules for interfacing with the data.
 The `mahoney.io` module contains low-level routines to load Neurofinder videos as dask arrays, to load region files as both structured objects and segmentation masks, and to load metadata files. This is the most convenient interface for interactive data exploration.
 
 The `mahoney.data` module exports a higher-level interface. The `mahoney.data.Neurofinder` class provides a cohesive view of the entire dataset, out of core. It breaks each video into multiple, consistently shaped datum by considering the subvideos of a given length, and returns the corresponding metadata and labels (if available) simultaneously with each datum. The `mahoney.data.Torchify` adapter wraps a `Neurofinder` dataset into a form compatible with PyTorch's `DataLoader`, an iterator with high-performance and convenience features like shuffling, batching, prefetching, and CUDA pinned memory.
+
+The `mahoney.preprocess` module contains functions that can be called in `mahoney.data.load_dataset` to preprocess the raw video. It includes options to normalize or open the video frames. Opening the video refers to erosion and dilation performed in succession.
+
+## How to run an NMF experiment
+
+After customizing your `gcp.sh`  and moving to the main directory folder, run `./gcp.sh [ARG]` where `[ARG]` can be either `std_nmf` which includes normalization as preprocessing or `property_nmf` which runs opening as preprocesing.
+
+## Setup environment
+
+If you are running this experiment on a Google cloud cluster, the relevant packages should already be installed with the bootstrap script. To install locally create a conda environment using the `REQUIREMENTS.txt` file for the list of packages: `conda create --name MY_NMF_ENV --file REQUIREMENTS.txt` Once you've created the conda environment, enter it using `source activate MY_NMF_ENV`. Once there you will also need to install the `thunder-extraction` package using `pip install thunder-extraction`. To be able to use the CaImAn based CNMF code you will need to additionally install the following in the environment:
+
+**TensorFlow :** `sudo pip install /tmp/tensorflow_pkg/tensorflow-1.1.0-py2-none-any.whl`

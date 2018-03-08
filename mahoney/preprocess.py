@@ -1,6 +1,7 @@
 import dask.array as da
 import numpy as np
 from skimage.morphology import opening
+from skimage.morphology import disk
 
 def normalize(x):
     ''' Normalize the video.
@@ -28,8 +29,6 @@ def ed_open(x):
         'x': A dask array representing a video.
     '''
     selem = disk(3)
-    print(selem.shape)
-    x = np.array(x)
     out = [opening(i, selem) for i in x]
-    # out = da.array(out)
+    out = da.array(out)
     return out

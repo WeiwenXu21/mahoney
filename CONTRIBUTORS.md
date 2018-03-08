@@ -1,8 +1,19 @@
 # Contributers
 
 #### Chris Barrick :
-  + Prepared cluster initialization script as well as data loader
+  + build system and packaging
+  + GCP deployment scripting
+  + Unit test setup
+  + I/O pipeline
+  + Torch to sklearn adapters
+  + U-Net in PyTorch (incomplete)
 #### Weiwen (Jenny) :
-  + Prepared templates for NMF and wrote CNMF code. Prepared wiki pages on theoretical background for each.
+  + Implementation of templates for NMF
+  + Implementation for CNMF
+  + WIKI page for theoretical background of NMF and CNMF
+  + Experiments on CNMF
 #### Rajeswari Sivakumar :
-  + Reviewed and modified NMF code, wrote preprocessing scripts, wrote experiments, and completed README and other general documentation.
+  + Reviewed and modified NMF code
+  + Implementation of preprocessing scripts
+  + Implemntation of NMF experiments
+  + README and other general documentation.

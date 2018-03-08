@@ -1,6 +1,9 @@
 import dask.array as da
 import numpy as np
 import mahoney.preprocess as pp
+import mahoney.io as io
+
+
 
 def test_normalize():
     arr = np.random.normal(loc=0, scale=10, size=(10, 5, 5))

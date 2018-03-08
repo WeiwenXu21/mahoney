@@ -33,6 +33,7 @@ ln -sf "$CONDA_PREFIX/etc/profile.d/conda.sh" /etc/profile.d/conda.sh
 echo "conda activate" >> /etc/profile.d/conda.sh
 
 
+
 # Install packages and updates
 # --------------------------------------------------
 
@@ -46,9 +47,12 @@ conda config --set always_yes true
 conda config --set changeps1 false
 conda install -q \
   numpy scipy scikit-learn scikit-image \
-  conda-forge::dask conda-forge::knit \
+  conda-forge::dask conda-forge::knit conda-forge::opencv \
   pytorch::pytorch
 
+echo "--> Install pip packages"
+pip install \
+  thunder-extraction 
 
 # Install GPU drivers
 # --------------------------------------------------

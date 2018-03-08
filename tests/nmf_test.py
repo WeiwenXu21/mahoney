@@ -4,19 +4,6 @@ from mahoney import nmf
 from mahoney import io
 
 
-def test_nmf_decomposition():
-    # All of these loads should succeed without error.
-    video = io.load_video('./data/neurofinder.01.00')[:10]
-    video = video.compute()  # nmf_decomposition does not support dask arrays
-
-    numb_of_frames, dims, dims = np.shape(video)
-
-    k = 5
-    W,H = nmf.nmf_decomposition(video,k)
-
-    assert np.shape(W) == (numb_of_frames, k)  # for 01.00: 2250 frames, 5 clusters
-    assert np.shape(H) == (k, dims*dims)  # for 01.00: 5 clusters, 512*512 pixels
-
 def test_nmf_extraction():
     # All of these loads should succeed without error.
     video = io.load_video('./data/neurofinder.01.00')[:10]

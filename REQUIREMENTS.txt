@@ -1,0 +1,22 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: osx-64
+_license=1.1=py36_1
+dask=0.17.1=py_1
+dask-core=0.17.1=py_0
+h5py=2.7.1=py36_3
+hdf5=1.10.1=2
+keras=2.0.9=py36_1
+krb5=1.14.2=0
+matplotlib=2.1.1=py36_0
+numpy=1.12.1=py36_blas_openblas_201
+opencv=3.3.0=py36_blas_openblas_203
+pandas=0.22.0=py36_0
+peakutils=1.0.3=py36_0
+pytest=3.4.1=py36_0
+python=3.6.4=0
+pytorch=0.3.1=py36_cuda0.0_cudnn0.0_2
+scikit-image=0.13.1=py36_0
+scikit-learn=0.19.1=py36_blas_openblas_201
+scipy=1.0.0=py36_blas_openblas_201
+tensorflow=1.0.0=py36_0

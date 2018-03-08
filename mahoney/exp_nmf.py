@@ -34,5 +34,5 @@ def property_nmf():
         tempdict["dataset"]=vid
         tempdict["regions"]=rois
         output.append(tempdict)
-    str_out = json.dumps(output, default=lambda x: int(x), fp=)
+    str_out = json.dumps(output, default=lambda x: int(x))
     print(str_out)

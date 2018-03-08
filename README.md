@@ -55,4 +55,12 @@ After customizing your `gcp.sh`  and moving to the main directory folder, run `.
 
 If you are running this experiment on a Google cloud cluster, the relevant packages should already be installed with the bootstrap script. To install locally create a conda environment using the `REQUIREMENTS.txt` file for the list of packages: `conda create --name MY_NMF_ENV --file REQUIREMENTS.txt` Once you've created the conda environment, enter it using `source activate MY_NMF_ENV`. Once there you will also need to install the `thunder-extraction` package using `pip install thunder-extraction`. To be able to use the CaImAn based CNMF code you will need to additionally install the following in the environment:
 
-**TensorFlow :** `sudo pip install /tmp/tensorflow_pkg/tensorflow-1.1.0-py2-none-any.whl`
+**tqmd and ipyparallel**: `pip install tqdm ipyparallel`
+**CaImAn**:
+```
+cd ..
+git clone https://github.com/flatironinstitute/CaImAn
+cd CaImAn/
+python setup.py install
+python setup.py build_ext -i
+```

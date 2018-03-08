@@ -47,16 +47,33 @@ The `mahoney.data` module exports a higher-level interface. The `mahoney.data.Ne
 
 The `mahoney.preprocess` module contains functions that can be called in `mahoney.data.load_dataset` to preprocess the raw video. It includes options to normalize or open the video frames. Opening the video refers to erosion and dilation performed in succession.
 
-## How to run an NMF experiment
+## Setup environment
 
 After customizing your `gcp.sh`  and moving to the main directory folder, run `./gcp.sh [ARG]` where `[ARG]` can be either `std_nmf` which includes normalization as preprocessing or `property_nmf` which runs opening as preprocesing.
 
-## Setup environment
+If you are running this experiment on a Google cloud cluster, the relevant packages should already be installed with the bootstrap script. To install locally create a conda environment using the `REQUIREMENTS.txt` file for the list of packages.
 
-If you are running this experiment on a Google cloud cluster, the relevant packages should already be installed with the bootstrap script. To install locally create a conda environment using the `REQUIREMENTS.txt` file for the list of packages: `conda create --name MY_NMF_ENV --file REQUIREMENTS.txt` Once you've created the conda environment, enter it using `source activate MY_NMF_ENV`. Once there you will also need to install the `thunder-extraction` package using `pip install thunder-extraction`. To be able to use the CaImAn based CNMF code you will need to additionally install the following in the environment:
+Full routine is as below:
 
-**tqmd and ipyparallel**: `pip install tqdm ipyparallel`
-**CaImAn**:
+```
+conda create --name MY_NMF_ENV --file REQUIREMENTS.txt
+source activate MY_NMF_ENV
+```
+
+## Using NMF
+You need to install thunder extraction package by:
+```
+pip install thunder-extraction
+```
+
+## Using CNMF
+You need to install `tqmd`, `ipyparallel` and `CaImAn`.
+
+For `tqmd` and `ipyparallel`:
+`pip install tqdm ipyparallel`
+
+For `CaImAn`:
+
 ```
 cd ..
 git clone https://github.com/flatironinstitute/CaImAn

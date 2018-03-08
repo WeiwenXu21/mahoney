@@ -18,7 +18,9 @@ def main():
     subcommands = parser.add_subparsers()
 
     # info
-    # cmd = subcommands.add_parser('info', description='print system info')
+    cmd = subcommands.add_parser('info', description='print system info')
+    cmd.set_defaults(func=info)
+
     cmd = subcommands.add_parser('std_nmf', description='run baseline experiment')
     cmd.set_defaults(func=std_nmf)
 

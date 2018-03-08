@@ -84,20 +84,26 @@ def load_dataset(base_path, subset='train', n=3000, *, frames=32, skip=1, step=1
     for sub in subset:
         path = f'{base_path}/neurofinder.{sub}'
 
+        # Read the metadata from the `info.json` and add additional info.
+        # We need to know the height and width to generate the mask.
         meta = io.load_metadata(path)
         meta['dataset'] = sub
         (height, width, total_frames) = meta['dimensions']
 
+        # Load the video and apply preprocessing to the whole.
         vid = io.load_video(path, imread)
         if preprocess is not None:
             vid = preprocess(vid)
 
+        # Masks are not available for all datasets.
         try:
             mask = io.load_mask(path, shape=(height, width))
         except FileNotFoundError:
             mask = None
 
-        for i in range(0, n, step):
+        # Extract instances from this video. We try to take `n` instances, but
+        # if `n` is too large, `v` will be partial or even empty.
+        for i in range(0, n*step, step):
             v = vid[i : i+frames*skip : skip]
             if len(v) == frames:
                 x.append(v)
@@ -128,7 +134,7 @@ class Torchify(Dataset):
             x: A list of the first halves of the pairs.
             y: A list of the second halves of the pairs.
         '''
-        if y: assert len(x) == len(y)
+        if y is not None: assert len(x) == len(y)
         self.x = x
         self.y = y
 
@@ -141,7 +147,16 @@ class Torchify(Dataset):
         '''Retrieves the ith datum from the dataset.
         '''
         x = self.x[i]
-        y = self.y[i] if self.y else None
+        y = self.y[i] if self.y is not None else None
+
+        # Collect to numpy if we have Dask arrays
         if hasattr(x, 'compute'): x = x.compute()
         if hasattr(y, 'compute'): y = y.compute()
-        return x, y
+
+        # If `self.y` was not given, we have nothing to return.
+        # Note that `y` may still be None because `self.y` may mix datasets
+        # with and without labels.
+        if self.y is not None:
+            return x, y
+        else:
+            return x
